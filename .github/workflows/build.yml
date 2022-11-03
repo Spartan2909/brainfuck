@@ -26,6 +26,6 @@ jobs:
       - name: Archive production artifacts
         uses: actions/upload-artifact@v3
         with:
-          name: built-${{ matrix.os }}
+          name: build-${{ matrix.os }}
           path: |
-            target
+            target/release

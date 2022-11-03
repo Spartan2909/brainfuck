@@ -1,5 +1,6 @@
 use std::fs;
 use std::env;
+use std::process;
 
 use console::Term;
 use either::Either;
@@ -28,40 +29,69 @@ fn find_matching_bracket(start_index: usize, program: &str) -> usize {
     return 0 as usize;
 }
 
+fn find_location(location: usize, program: &str) -> (usize, usize) {
+    let line_num = program[0..location].matches("\n").count() + 1;
+
+    let mut last_newline = 0 as usize;
+    let mut i = (location as i32) - 1;
+    while i >= 0 {
+        if &program[i as usize..(i+1) as usize] == "\n" {
+            last_newline = i as usize;
+            i = 0;
+        }
+        i -= 1;
+    }
+
+    let char_num = program[last_newline..location+1].chars().count();
+
+    return (line_num, char_num);
+}
+
+fn raise_error(error_type: &str, location: usize, program: &str) {
+    let readable_location = find_location(location, program);
+    println!("{}:{} - {}", readable_location.0, readable_location.1, error_type);
+    process::exit(1);
+}
+
 fn main() {
     let args: Vec<String> = env::args().collect();
     let file_path = &args[1];
 
     let program = fs::read_to_string(file_path)
-        .expect("Should have been able to read the file");
+        .expect("File failed to read");
 
-    let mut ptr = 0u16;
+    let mut ptr = 0 as usize;
     let mut arr: [u8; 65535] = [0; 65535];
     let mut i: usize = 0;
     while i < program.len() {
         let item = program.chars().nth(i).expect("");
-        println!("position {}, character {}", i, item);
         match item {
             '>' => {ptr += 1;}
             '<' => {ptr -= 1;}
-            '+' => {arr[ptr as usize] += 1;}
-            '-' => {arr[ptr as usize] -= 1;}
-            '.' => {print!("{}", arr[ptr as usize] as char);}
+            '+' => {arr[ptr] += 1;}
+            '-' => {
+                if arr[ptr] > 0 {
+                    arr[ptr] -= 1;
+                } else {
+                    raise_error("OverFlowError", i, &program)
+                }
+            }
+            '.' => {print!("{}", arr[ptr] as char);}
             ',' => {
                 let term = Term::stdout();
                 if let Ok(input) = Term::read_char(&term) {
                     let mut b = [0u8; 4];
                     input.encode_utf8(&mut b);
-                    arr[ptr as usize] = b[0]
+                    arr[ptr] = b[0];
                 }
             }
             '[' => {
-                if arr[ptr as usize] == 0 {
+                if arr[ptr] == 0 {
                     i = find_matching_bracket(i, &program);
                 }
             }
             ']' => {
-                if arr[ptr as usize] != 0 {
+                if arr[ptr] != 0 {
                     i = find_matching_bracket(i, &program);
                 }
             }

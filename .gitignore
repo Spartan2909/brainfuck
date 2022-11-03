@@ -16,3 +16,7 @@ target/
 # Brainfuck files
 *.bf
 !/samples/*.bf
+
+# Replit stuff
+*.nix
+.replit

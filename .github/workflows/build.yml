@@ -28,4 +28,5 @@ jobs:
         with:
           name: build-${{ matrix.os }}
           path: |
-            target/release
+            target/release/brainfuck*
+            !target/release/brainfuck.d

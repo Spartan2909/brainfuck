@@ -49,11 +49,12 @@ fn find_location(location: usize, program: &str) -> (usize, usize) {
 }
 
 fn overflow_error(location: usize, program: &str) -> &str {
+    let readable_location = find_location(location, program);
     return format!("{}:{} - {}", readable_location.0, readable_location.1, error_type);
 }
 
 fn raise_error(error: &str) {
-    println!(&error);
+    println!("{}", &error);
     process::exit(1);
 }
 

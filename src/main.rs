@@ -1,6 +1,7 @@
 use std::fs;
 use std::env;
 use std::process;
+use std::fmt;
 
 use console::Term;
 use either::Either;
@@ -47,9 +48,12 @@ fn find_location(location: usize, program: &str) -> (usize, usize) {
     return (line_num, char_num);
 }
 
-fn raise_error(error_type: &str, location: usize, program: &str) {
-    let readable_location = find_location(location, program);
-    println!("{}:{} - {}", readable_location.0, readable_location.1, error_type);
+fn overflow_error(location: usize, program: &str) -> &str {
+    return format!("{}:{} - {}", readable_location.0, readable_location.1, error_type);
+}
+
+fn raise_error(error: &str) {
+    println!(&error);
     process::exit(1);
 }
 

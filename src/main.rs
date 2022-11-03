@@ -184,15 +184,9 @@ fn execute(file_path: &str) {
 
 fn main() {
     let args: Vec<String> = env::args().collect();
+    let mut show_def = false;
     if args.len() == 1 {
-        print!("
-        Brainfuck is an esoteric programming language originally developed by Urban Müller in 1993.
-        This is my implementation of it in Rust.
-
-        Usage: 
-        brainfuck <path-to-file>.bf: Execute the specified brainfuck file
-        brainfuck help: Display language help
-        ");
+        show_def = true;
     } else if args.len() == 2 {
         if args[1] == "help" {
             print!("
@@ -217,5 +211,24 @@ fn main() {
         } else {
             execute(&args[1])
         }
+    } else if args.len() == 3 && args[1] == "help" {
+        match args[2] {
+            _ => {println!("Unknown error type");}
+        }
+    } else {
+        println!("Unknown command");
+        show_def = true;
+    }
+
+    if show_def {
+        print!("
+        Brainfuck is an esoteric programming language originally developed by Urban Müller in 1993.
+        This is my implementation of it in Rust.
+
+        Usage: 
+        brainfuck <path-to-file>.bf: Execute the specified brainfuck file
+        brainfuck help: Display language help
+        brainfuck help <error>: Display help for the specified error
+        ");
     }
 }

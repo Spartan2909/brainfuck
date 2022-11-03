@@ -9,10 +9,10 @@ jobs:
   build:
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu, windows, macos]
         
     name: Build executable
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}-latest
     
     steps:
       - name: Checkout repository

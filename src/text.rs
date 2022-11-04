@@ -33,6 +33,8 @@ pub static HELP_PARSING: &str = "A Parsing Error means that there was a problem 
 
 pub static HELP_INTERNAL: &str = "An Internal Error means that there was a problem with the application. Please submit a bug report at https://github.com/Spartan2909/brainfuck/issues/new?labels=bug&template=bug_report.md";
 
+pub static HELP_ITER: &str = "An iteration error occurs when a loop is executed too many times. Check your code for possible infinite loops.";
+
 pub static INFO: &str = "Brainfuck is an esoteric programming language originally developed by Urban Müller in 1993.
 This is my implementation of it in Rust.
 

@@ -33,7 +33,7 @@ fn find_matching_bracket(start_index: usize, program: &str) -> usize {
     return 0 as usize;
 }
 
-fn check_brackets_match(program: &str) -> (bool, usize) {
+fn check_brackets_match(program: &str) -> (bool, usize, &str) {
     let mut open_brackets = 0;
     let mut last_open_bracket = 0;
     let mut last_close_bracket = 0;
@@ -50,13 +50,16 @@ fn check_brackets_match(program: &str) -> (bool, usize) {
     let brackets_match = open_brackets == 0;
     
     let mut mismatched = 0;
+    let mut problem_char = "";
     if open_brackets > 0 {
         mismatched = last_open_bracket;
+        problem_char = "[";
     } else if open_brackets < 0 {
         mismatched = last_close_bracket;
+        problem_char = "]";
     }
 
-    return (brackets_match, mismatched);
+    return (brackets_match, mismatched, problem_char);
 }
 
 fn find_location(location: usize, program: &str) -> (usize, usize) {
@@ -72,7 +75,7 @@ fn find_location(location: usize, program: &str) -> (usize, usize) {
         i -= 1;
     }
 
-    let char_num = program[last_newline..location+1].chars().count();
+    let char_num = program[last_newline..location].chars().count() + 1;
 
     return (line_num, char_num);
 }
@@ -100,6 +103,11 @@ fn file_error() -> String {
     process::exit(1);
 }
 
+fn iter_error(max_iters: u16) {
+    eprintln!("Iteration Error - Exceeded max number of iterations ({})", max_iters);
+    process::exit(1);
+}
+
 fn execute(file_path: &str) {
     let mut program = "";
     let s;
@@ -113,13 +121,20 @@ fn execute(file_path: &str) {
 
     let check_match = check_brackets_match(&program);
     if !check_match.0 {
-        syntax_error(check_match.1, "Unmatched bracket", &program);
+        syntax_error(check_match.1, &format!("Unmatched bracket '{}'", check_match.2), &program);
     }
 
     let mut ptr = 0 as usize;
     let mut arr: [u8; u16::MAX as usize] = [0; u16::MAX as usize];
+    let mut num_iters: u32 = 0;
+    let max_iters: u16 = u16::MAX;
+    
     let mut i: usize = 0;
     while i < program.len() {
+        if num_iters > max_iters as u32 {
+            iter_error(max_iters);
+        }
+        
         let current_char = program.chars().nth(i);
         let mut item = '0';
         if current_char.is_some() {
@@ -171,11 +186,13 @@ fn execute(file_path: &str) {
             '[' => {
                 if arr[ptr] == 0 {
                     i = find_matching_bracket(i, &program);
+                    num_iters = 0;
                 }
             }
             ']' => {
                 if arr[ptr] != 0 {
                     i = find_matching_bracket(i, &program);
+                    num_iters += 1;
                 }
             }
             _ => {}
@@ -203,6 +220,7 @@ fn main() {
             "file" | "file handling" | "file handling error" => text::HELP_FILE,
             "parsing" | "parsing error" => text::HELP_PARSING,
             "internal" | "internal error" => text::HELP_INTERNAL,
+            "iteration" | "iteration error" => text::HELP_ITER,
             _ => "Unknown error type"
         });
     } else {

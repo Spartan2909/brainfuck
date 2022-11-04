@@ -41,4 +41,4 @@ This is my implementation of it in Rust.
 Usage: 
 brainfuck <path-to-file>.bf: Execute the specified brainfuck file
 brainfuck help: Display language help
-brainfuck help '<error>': Display help for the specified error e.g `brainfuck help 'Overflow Error'`";
+brainfuck help '<error>': Display help for the specified error, e.g `brainfuck help overflow`";

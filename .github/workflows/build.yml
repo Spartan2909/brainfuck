@@ -28,6 +28,8 @@ jobs:
           sudo apt install gcc-aarch64-linux-gnu
       - name: Build
         run: cargo build --target ${{ matrix.target.target }} --release --all-features
+      - name: Debug missing files
+        run: ls target/release
       - name: Archive production artifacts
         uses: actions/upload-artifact@v3
         with:

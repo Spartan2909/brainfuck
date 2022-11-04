@@ -89,7 +89,7 @@ fn parsing_error(location: usize, program: &str) -> String {
 }
 
 fn file_error() -> String {
-    return String::from("File handling error");
+    return String::from("File Handling Error");
 }
 
 fn raise_error(error: String) {
@@ -130,14 +130,14 @@ fn execute(file_path: &str) {
                 if ptr < u16::MAX as usize {
                     ptr += 1;
                 } else {
-                    raise_error(overflow_error(i, "Overflow", "pointer", &program));
+                    raise_error(overflow_error(i, "Overflow", "data pointer", &program));
                 }
             }
             '<' => {
                 if ptr > 0 {
                     ptr -= 1;
                 } else {
-                    raise_error(overflow_error(i, "Underflow", "pointer", &program));
+                    raise_error(overflow_error(i, "Underflow", "data pointer", &program));
                 }
             }
             '+' => {
@@ -207,14 +207,25 @@ fn main() {
         [ : If the byte at the data pointer is nonzero, then instead of moving the instruction pointer forward to the next command, jump it back to the command after the matching [ command.
 
         More information: https://wikipedia.org/wiki/Brainfuck
-            ")
+
+        Usage: 
+        brainfuck <path-to-file>.bf: Execute the specified brainfuck file
+        brainfuck help: Display language help
+        brainfuck help '<error>': Display help for the specified error e.g `brainfuck help 'Overflow Error'`
+
+        Error types: overflow, syntax, file handling, parsing
+        ")
         } else {
             execute(&args[1])
         }
     } else if args.len() == 3 && args[1] == "help" {
-        match args[2] {
-            _ => {println!("Unknown error type");}
-        }
+        println!("{}", match args[2].to_lowercase().as_str().trim() {
+            "overflow" | "overflow error" => "An Overflow Error occurs when a value is too high or too low. If the error occurred at the data pointer, it means that the pointer was moved too far to the left (underflow) or too far to the right (overflow). If it occurred at an array index, it means that the value was set to below zero (underflow) or above 255 (overflow).",
+            "syntax" | "syntax error" => "A Syntax Error means that there was a problem with the supplied program that made it invalid. If it occurred from a mismatched bracket, you should check that the program contains the same number of opening and closing brackets.",
+            "file" | "file handling" | "file handling error" => "A File Handling Error means that there was a problem reading the data from the supplied file. Ensure that the file exists and you have permission to access it.",
+            "parsing" | "parsing error" => "A Parsing Error means that there was a problem interpreting a character from the supplied file. Ensure that all characters are valid Unicode characters.",
+            _ => "Unknown error type"
+        });
     } else {
         println!("Unknown command");
         show_def = true;
@@ -228,7 +239,7 @@ fn main() {
         Usage: 
         brainfuck <path-to-file>.bf: Execute the specified brainfuck file
         brainfuck help: Display language help
-        brainfuck help <error>: Display help for the specified error
+        brainfuck help '<error>': Display help for the specified error e.g `brainfuck help 'Overflow Error'`
         ");
     }
 }

@@ -7,6 +7,8 @@ use std::{
 use console::Term;
 use either::Either;
 
+pub mod text;
+
 fn find_matching_bracket(start_index: usize, program: &str) -> usize {
     let mut open_brackets = 0;
 
@@ -185,63 +187,30 @@ fn execute(file_path: &str) {
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-    let mut show_def = false;
+    let mut show_info = false;
     if args.len() == 1 {
-        show_def = true;
+        show_info = true;
     } else if args.len() == 2 {
         if args[1] == "help" {
-            print!("
-        Brainfuck uses the following characters: '>', '<', '+', '-', '.', ',', '[', and ']'.
-        Any other characters are ignored. 
-
-        At the start of the program, an array of 65536 bytes is created, along with a pointer for that array. 
-        The previously mentioned characters are used to manipulate that array and pointer. 
-
-        Definitions: 
-        > : Increment the data pointer.
-        < : Decrement the data pointer.
-        + : Increment the value at the data pointer.
-        - : Decrement the value at the data pointer.
-        . : Output the value at the data pointer, encoded as ASCII.
-        , : Accept one byte of input, storing its ASCII code point at the data pointer. 
-        [ : If the byte at the data pointer is zero, then instead of moving the instruction pointer forward to the next command, jump it forward to the command after the matching ] command.
-        [ : If the byte at the data pointer is nonzero, then instead of moving the instruction pointer forward to the next command, jump it back to the command after the matching [ command.
-
-        More information: https://wikipedia.org/wiki/Brainfuck
-
-        Usage: 
-        brainfuck <path-to-file>.bf: Execute the specified brainfuck file
-        brainfuck help: Display language help
-        brainfuck help '<error>': Display help for the specified error e.g `brainfuck help 'Overflow Error'`
-
-        Error types: overflow, syntax, file handling, parsing
-        ")
+            println!("{}", text::HELP_GENERAL);
         } else {
-            execute(&args[1])
+            execute(&args[1]);
         }
     } else if args.len() == 3 && args[1] == "help" {
         println!("{}", match args[2].to_lowercase().as_str().trim() {
-            "overflow" | "underflow" | "overflow error" => "An Overflow Error occurs when a value is too high or too low. If the error occurred at the data pointer, it means that the pointer was moved too far to the left (underflow) or too far to the right (overflow). If it occurred at an array index, it means that the value was set to below zero (underflow) or above 255 (overflow).",
-            "syntax" | "syntax error" => "A Syntax Error means that there was a problem with the supplied program that made it invalid. If it occurred from a mismatched bracket, you should check that the program contains the same number of opening and closing brackets.",
-            "file" | "file handling" | "file handling error" => "A File Handling Error means that there was a problem reading the data from the supplied file. Ensure that the file exists and you have permission to access it.",
-            "parsing" | "parsing error" => "A Parsing Error means that there was a problem interpreting a character from the supplied file. Ensure that all characters are valid Unicode characters.",
-            "internal" | "internal error" => "An Internal Error means that there was a problem with the application. Please submit a bug report at https://github.com/Spartan2909/brainfuck/issues/new?labels=bug&template=bug_report.md",
+            "overflow" | "underflow" | "overflow error" => text::HELP_OVERFLOW,
+            "syntax" | "syntax error" => text::HELP_SYNTAX,
+            "file" | "file handling" | "file handling error" => text::HELP_FILE,
+            "parsing" | "parsing error" => text::HELP_PARSING,
+            "internal" | "internal error" => text::HELP_INTERNAL,
             _ => "Unknown error type"
         });
     } else {
         println!("Unknown command");
-        show_def = true;
+        show_info = true;
     }
 
-    if show_def {
-        print!("
-        Brainfuck is an esoteric programming language originally developed by Urban Müller in 1993.
-        This is my implementation of it in Rust.
-
-        Usage: 
-        brainfuck <path-to-file>.bf: Execute the specified brainfuck file
-        brainfuck help: Display language help
-        brainfuck help '<error>': Display help for the specified error e.g `brainfuck help 'Overflow Error'`
-        ");
+    if show_info {
+        println!("{}", text::INFO);
     }
 }

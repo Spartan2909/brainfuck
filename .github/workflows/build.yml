@@ -21,6 +21,8 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
+      - name: Install target
+        run: rustup target add ${{ matrix.target.target }}
       - name: Build
         run: cargo build --target ${{ matrix.target.target }} --release --all-features
       - name: Archive production artifacts

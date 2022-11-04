@@ -1,6 +1,8 @@
-use std::fs;
-use std::env;
-use std::process;
+use std::{
+    fs,
+    env,
+    process
+};
 
 use console::Term;
 use either::Either;
@@ -75,25 +77,24 @@ fn find_location(location: usize, program: &str) -> (usize, usize) {
 
 fn overflow_error(location: usize, problem: &str, overflow_location: &str, program: &str) -> String {
     let readable_location = find_location(location, program);
-    return format!("{}:{} - Overflow Error - {} at {}", readable_location.0, readable_location.1, problem, overflow_location);
+    eprintln!("{}:{} - Overflow Error - {} at {}", readable_location.0, readable_location.1, problem, overflow_location);
+    process::exit(1);
 }
 
 fn syntax_error(location: usize, problem: &str, program: &str) -> String {
     let readable_location = find_location(location, program);
-    return format!("{}:{} - Syntax Error - {}", readable_location.0, readable_location.1, problem);
+    eprintln!("{}:{} - Syntax Error - {}", readable_location.0, readable_location.1, problem);
+    process::exit(1);
 }
 
 fn parsing_error(location: usize, program: &str) -> String {
     let readable_location = find_location(location, program);
-    return format!("{}:{} - Parsing Error", readable_location.0, readable_location.1);
+    eprintln!("{}:{} - Parsing Error", readable_location.0, readable_location.1);
+    process::exit(1);
 }
 
 fn file_error() -> String {
-    return String::from("File Handling Error");
-}
-
-fn raise_error(error: String) {
-    eprintln!("{}", &error);
+    eprintln!("File Handling Error");
     process::exit(1);
 }
 
@@ -105,12 +106,12 @@ fn execute(file_path: &str) {
         s = contents.to_owned();
         program = s.as_str();
     } else {
-        raise_error(file_error());
+        file_error();
     }
 
     let check_match = check_brackets_match(&program);
     if !check_match.0 {
-        raise_error(syntax_error(check_match.1, "Unmatched bracket", &program))
+        syntax_error(check_match.1, "Unmatched bracket", &program);
     }
 
     let mut ptr = 0 as usize;
@@ -122,7 +123,7 @@ fn execute(file_path: &str) {
         if current_char.is_some() {
             item = current_char.expect("Internal error");
         } else {
-            raise_error(parsing_error(i, &program))
+            parsing_error(i, &program);
         }
 
         match item {
@@ -130,14 +131,14 @@ fn execute(file_path: &str) {
                 if ptr < u16::MAX as usize {
                     ptr += 1;
                 } else {
-                    raise_error(overflow_error(i, "Overflow", "data pointer", &program));
+                    overflow_error(i, "Overflow", "data pointer", &program);
                 }
             }
             '<' => {
                 if ptr > 0 {
                     ptr -= 1;
                 } else {
-                    raise_error(overflow_error(i, "Underflow", "data pointer", &program));
+                    overflow_error(i, "Underflow", "data pointer", &program);
                 }
             }
             '+' => {
@@ -145,7 +146,7 @@ fn execute(file_path: &str) {
                     arr[ptr] += 1;
                 } else {
                     let overflow_location = String::from("array index ") + &i.to_string();
-                    raise_error(overflow_error(i, "Overflow", &overflow_location, &program));
+                    overflow_error(i, "Overflow", &overflow_location, &program);
                 }
             }
             '-' => {
@@ -153,7 +154,7 @@ fn execute(file_path: &str) {
                     arr[ptr] -= 1;
                 } else {
                     let overflow_location = String::from("array index ") + &i.to_string();
-                    raise_error(overflow_error(i, "Underflow", &overflow_location, &program));
+                    overflow_error(i, "Underflow", &overflow_location, &program);
                 }
             }
             '.' => {print!("{}", arr[ptr] as char);}
@@ -224,6 +225,7 @@ fn main() {
             "syntax" | "syntax error" => "A Syntax Error means that there was a problem with the supplied program that made it invalid. If it occurred from a mismatched bracket, you should check that the program contains the same number of opening and closing brackets.",
             "file" | "file handling" | "file handling error" => "A File Handling Error means that there was a problem reading the data from the supplied file. Ensure that the file exists and you have permission to access it.",
             "parsing" | "parsing error" => "A Parsing Error means that there was a problem interpreting a character from the supplied file. Ensure that all characters are valid Unicode characters.",
+            "internal" | "internal error" => "An Internal Error means that there was a problem with the application. Please submit a bug report at https://github.com/Spartan2909/brainfuck/issues/new?labels=bug&template=bug_report.md",
             _ => "Unknown error type"
         });
     } else {

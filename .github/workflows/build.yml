@@ -9,10 +9,10 @@ jobs:
   build:
     strategy:
       matrix:
-        os: [ubuntu, windows, macos]
+        target: [ {target: aarch64-unknown-linux-gnu, name: ARM64 Linux} ]
         
     name: Build executable
-    runs-on: ${{ matrix.os }}-latest
+    runs-on: ubuntu-latest
     
     steps:
       - name: Checkout repository
@@ -22,11 +22,11 @@ jobs:
         with:
           toolchain: stable
       - name: Build
-        run: cargo build --release --all-features
+        run: cargo build --target ${{ matrix.target.target }} --release --all-features
       - name: Archive production artifacts
         uses: actions/upload-artifact@v3
         with:
-          name: build-${{ matrix.os }}
+          name: ${{ matrix.target.name }}
           path: |
             target/release/brainfuck*
             !**/*.d

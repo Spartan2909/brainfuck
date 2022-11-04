@@ -220,7 +220,7 @@ fn main() {
         }
     } else if args.len() == 3 && args[1] == "help" {
         println!("{}", match args[2].to_lowercase().as_str().trim() {
-            "overflow" | "overflow error" => "An Overflow Error occurs when a value is too high or too low. If the error occurred at the data pointer, it means that the pointer was moved too far to the left (underflow) or too far to the right (overflow). If it occurred at an array index, it means that the value was set to below zero (underflow) or above 255 (overflow).",
+            "overflow" | "underflow" | "overflow error" => "An Overflow Error occurs when a value is too high or too low. If the error occurred at the data pointer, it means that the pointer was moved too far to the left (underflow) or too far to the right (overflow). If it occurred at an array index, it means that the value was set to below zero (underflow) or above 255 (overflow).",
             "syntax" | "syntax error" => "A Syntax Error means that there was a problem with the supplied program that made it invalid. If it occurred from a mismatched bracket, you should check that the program contains the same number of opening and closing brackets.",
             "file" | "file handling" | "file handling error" => "A File Handling Error means that there was a problem reading the data from the supplied file. Ensure that the file exists and you have permission to access it.",
             "parsing" | "parsing error" => "A Parsing Error means that there was a problem interpreting a character from the supplied file. Ensure that all characters are valid Unicode characters.",

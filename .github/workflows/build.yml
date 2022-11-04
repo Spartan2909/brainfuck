@@ -3,7 +3,7 @@ name: Compile and save program
 on:
   push:
     branches: [main]
-    paths-ignore: ["samples/**"]
+    paths-ignore: ["samples/**, **/*.md"]
     
 jobs:    
   build:

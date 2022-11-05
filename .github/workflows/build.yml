@@ -4,6 +4,7 @@ on:
   push:
     branches: [main]
     paths-ignore: ["samples/**", "**.md"]
+  workflow_dispatch:
     
 jobs:    
   build:

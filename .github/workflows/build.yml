@@ -25,7 +25,7 @@ jobs:
       - name: Install dependencies
         run: |
           rustup target add ${{ matrix.target }}
-          sudo apt-get install gcc-multilib gcc-aarch64-linux-gnu i686-w64-mingw32-gcc x86_64-w64-mingw32-gcc
+          sudo apt-get install gcc-multilib gcc-aarch64-linux-gnu
       - name: Build
         uses: shogan/rust-musl-action@v1.0.2
         with:

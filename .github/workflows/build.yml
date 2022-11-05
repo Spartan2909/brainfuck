@@ -25,10 +25,11 @@ jobs:
       - name: Install dependencies
         run: |
           rustup target add ${{ matrix.target }}
-          sudo apt install gcc-multilib
-          sudo apt install gcc-aarch64-linux-gnu
+          sudo apt-get install gcc-multilib gcc-aarch64-linux-gnu i686-w64-mingw32-gcc x86_64-w64-mingw32-gcc
       - name: Build
-        run: cargo build --target ${{ matrix.target }} --release --all-features
+        uses: shogan/rust-musl-action@v1
+        with:
+          args: cargo build --target ${{ matrix.target }} --release --all-features
       - name: Debug missing files
         run: |
           ls target/release

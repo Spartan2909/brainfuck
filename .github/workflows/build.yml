@@ -36,11 +36,13 @@ jobs:
         with:
           use-cross: true
           command: build
-          args: --target ${{ matrix.target }} --release --all-features
+          args: --target ${{ matrix.target }} --release --all-features --target-dir=/tmp
       - name: Debug missing files
         run: |
-          ls target/release
+          echo "root dir:"
           ls /home/runner/work/brainfuck/brainfuck
+          echo "target dir:"
+          ls /tmp/release
       - name: Archive production artifacts
         uses: actions/upload-artifact@v3
         with:

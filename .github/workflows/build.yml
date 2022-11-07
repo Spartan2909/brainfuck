@@ -34,10 +34,10 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
-      - name: Install dependencies
-        run: |
+      #- name: Install dependencies
+      #  run: |
           rustup target add ${{ matrix.target.target }}
-          sudo apt-get install gcc-multilib
+      #    sudo apt-get install gcc-multilib
       - name: Build
         uses: actions-rs/cargo@v1
         with:

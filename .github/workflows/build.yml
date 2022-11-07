@@ -12,15 +12,15 @@ jobs:
       fail-fast: false
       matrix:
         target: 
-          - aarch64-unknown-linux-gnu
-          - i686-pc-windows-gnu
-          - i686-unknown-linux-gnu
-          #- x86_64-apple-darwin # fails
-          - x86_64-pc-windows-gnu
-          - x86_64-unknown-linux-gnu
+          - {target: aarch64-unknown-linux-gnu, platform: ubuntu-latest, cross: true}
+          - {target: i686-pc-windows-gnu, platform: ubuntu-latest, cross: true}
+          - {target: i686-unknown-linux-gnu, platform: ubuntu-latest, cross: true}
+          - {target: x86_64-apple-darwin, platform: macos-latest, cross: false}
+          - {target: x86_64-pc-windows-gnu, platform: ubuntu-latest, cross: true}
+          - {target: x86_64-unknown-linux-gnu, platform: ubuntu-latest, cross: true}
           
     name: Build executable
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.target.platform }}
     
     steps:
       - name: Checkout repository
@@ -36,14 +36,14 @@ jobs:
           toolchain: stable
       - name: Install dependencies
         run: |
-          rustup target add ${{ matrix.target }}
+          rustup target add ${{ matrix.target.target }}
           sudo apt-get install gcc-multilib
       - name: Build
         uses: actions-rs/cargo@v1
         with:
-          use-cross: true
+          use-cross: ${{ matrix.target.cross }}
           command: build
-          args: --target ${{ matrix.target }} --release --all-features --target-dir=/tmp
+          args: --target ${{ matrix.target.target }} --release --all-features --target-dir=/tmp
       - name: Debug missing files
         run: |
           echo "root dir:"
@@ -55,7 +55,7 @@ jobs:
       - name: Archive production artifacts
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ matrix.target }}
+          name: ${{ matrix.target.target }}
           path: |
             /tmp/release
           #/tmp/release/brainfuck*

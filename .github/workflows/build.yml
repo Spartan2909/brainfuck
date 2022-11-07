@@ -46,8 +46,6 @@ jobs:
           args: --target ${{ matrix.target.target }} --release --all-features --target-dir=/tmp
       - name: Debug missing files
         run: |
-          echo "root dir:"
-          ls /home/runner/work/brainfuck/brainfuck
           echo "target dir:"
           ls /tmp/release
           echo "deps:"

@@ -125,7 +125,7 @@ fn execute(file_path: &str) {
     }
 
     let mut ptr = 0 as usize;
-    let mut arr: [u8; u16::MAX as usize] = [0; u16::MAX as usize];
+    let mut arr: [u8; usize::pow(2, 16)] = [0; usize::pow(2, 16)];
     let mut num_iters: u32 = 0;
     let max_iters: u16 = u16::MAX;
     

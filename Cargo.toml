@@ -9,7 +9,7 @@ edition = "2021"
 console = "0.15.2"
 either = "1.8.0"
 
-[[bin]]
-edition = "2021"
-name = "brainfuck"
-path = "src/main.rs"
+#[[bin]]
+#edition = "2021"
+#name = "brainfuck"
+#path = "src/main.rs"

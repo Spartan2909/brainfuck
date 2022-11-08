@@ -40,6 +40,6 @@ jobs:
         with:
           name: ${{ matrix.target.target }}
           path: |
-            /tmp/${{ matrix.target.target }}release/brainfuck*
+            /tmp/${{ matrix.target.target }}/release/brainfuck*
             !**/*.d
             !**/*.pdb

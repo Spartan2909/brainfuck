@@ -47,15 +47,15 @@ jobs:
       - name: Debug missing files
         run: |
           echo "target dir:"
-          ls /tmp/release
+          ls /tmp/${{ matrix.target.target }}/release
           echo "deps:"
-          ls /tmp/release/deps
+          ls /tmp/${{ matrix.target.target }}/release/deps
       - name: Archive production artifacts
         uses: actions/upload-artifact@v3
         with:
           name: ${{ matrix.target.target }}
           path: |
-            /tmp/release
+            /tmp/${{ matrix.target.target }}/release
           #/tmp/release/brainfuck*
           #!**/*.d
           #!**/*.pdb

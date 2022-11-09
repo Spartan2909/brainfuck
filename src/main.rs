@@ -107,8 +107,8 @@ fn parsing_error(location: usize, program: &str) -> String {
     process::exit(1);
 }
 
-fn file_error() -> String {
-    eprintln!("File Handling Error");
+fn file_error(message: &str) -> String {
+    eprintln!("File Handling Error - {}", message);
     process::exit(1);
 }
 
@@ -125,7 +125,7 @@ fn execute(file_path: &str) {
         s = contents.to_owned();
         program = s.as_str();
     } else {
-        file_error();
+        file_error("The specified file not found");
     }
 
     let check_match = check_brackets_match(&program);

@@ -125,7 +125,7 @@ fn execute(file_path: &str) {
         s = contents.to_owned();
         program = s.as_str();
     } else {
-        file_error("The specified file not found");
+        file_error("The specified file was not found");
     }
 
     let check_match = check_brackets_match(&program);

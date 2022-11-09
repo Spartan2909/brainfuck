@@ -8,8 +8,4 @@ edition = "2021"
 [dependencies]
 console = "0.15.2"
 either = "1.8.0"
-
-#[[bin]]
-#edition = "2021"
-#name = "brainfuck"
-#path = "src/main.rs"
+clap = { version = "4.0.0", features = ["derive", "unicode"] }

@@ -1,13 +1,22 @@
-use std::{
-    fs,
-    env,
-    process
-};
+use std::{fs, process};
 
+use clap::Parser;
 use console::Term;
 use either::Either;
 
 pub mod text;
+
+#[derive(Parser, Debug)]
+#[command(author, version, about, long_about = text::INFO)]
+struct Cli {
+    /// The path to the file to be executed. Can be relative or absolute. 
+    #[arg(default_value = None)]
+    path: Option<String>,
+
+    /// Display help for a particular error
+    #[arg(long = "error-help")]
+    error_help: Option<String>,
+}
 
 fn find_matching_bracket(start_index: usize, program: &str) -> usize {
     let mut open_brackets = 0;
@@ -203,18 +212,10 @@ fn execute(file_path: &str) {
 }
 
 fn main() {
-    let args: Vec<String> = env::args().collect();
-    let mut show_info = false;
-    if args.len() == 1 {
-        show_info = true;
-    } else if args.len() == 2 {
-        if args[1] == "help" {
-            println!("{}", text::HELP_GENERAL);
-        } else {
-            execute(&args[1]);
-        }
-    } else if args.len() == 3 && args[1] == "help" {
-        println!("{}", match args[2].to_lowercase().as_str().trim() {
+    let cli = Cli::parse();
+
+    if let Some(error_help) = cli.error_help.as_deref() {
+        println!("{}", match error_help {
             "overflow" | "underflow" | "overflow error" => text::HELP_OVERFLOW,
             "syntax" | "syntax error" => text::HELP_SYNTAX,
             "file" | "file handling" | "file handling error" => text::HELP_FILE,
@@ -223,12 +224,7 @@ fn main() {
             "iteration" | "iteration error" => text::HELP_ITER,
             _ => "Unknown error type"
         });
-    } else {
-        println!("Unknown command");
-        show_info = true;
-    }
-
-    if show_info {
-        println!("{}", text::INFO);
+    } else if let Some(path) = cli.path.as_deref() {
+        execute(path);
     }
 }

@@ -31,4 +31,4 @@
   ]
   <-              Subtract 1 from Cell #3
 ]
-<. Output the value at cell #2
+<.                Output the value at cell #2

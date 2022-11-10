@@ -3,18 +3,19 @@ use std::{fs, process};
 use clap::Parser;
 use console::Term;
 use either::Either;
+use regex::Regex;
 
 pub mod text;
 
 #[derive(Parser, Debug)]
-#[command(author, version, about, long_about = text::INFO)]
+#[command(author, version, about, long_about = text::HELP_GENERAL)]
 struct Cli {
     /// The path to the file to be executed. Can be relative or absolute. 
     #[arg(default_value = None)]
     path: Option<String>,
 
     /// Display help for a particular error
-    #[arg(long = "error-help")]
+    #[arg(short, long = "error-help")]
     error_help: Option<String>,
 }
 
@@ -84,7 +85,7 @@ fn find_location(location: usize, program: &str) -> (usize, usize) {
         i -= 1;
     }
 
-    let char_num = program[last_newline..location].chars().count() + 1;
+    let char_num = program[last_newline..location].chars().count();
 
     return (line_num, char_num);
 }
@@ -119,6 +120,7 @@ fn iter_error(max_iters: u16) {
 
 fn execute(file_path: &str) {
     let mut program = "";
+    let re = Regex::new(r"[^+-><\[\],.]").unwrap();
     let s;
 
     if let Ok(contents) = fs::read_to_string(file_path) {
@@ -153,6 +155,7 @@ fn execute(file_path: &str) {
         }
 
         match item {
+            item if re.is_match(&item.to_string()) => {}
             '>' => {
                 if ptr < u16::MAX as usize {
                     ptr += 1;
@@ -171,7 +174,7 @@ fn execute(file_path: &str) {
                 if arr[ptr] < u8::MAX {
                     arr[ptr] += 1;
                 } else {
-                    let overflow_location = String::from("array index ") + &i.to_string();
+                    let overflow_location = String::from("array index ") + &ptr.to_string();
                     overflow_error(i, "Overflow", &overflow_location, &program);
                 }
             }
@@ -179,7 +182,7 @@ fn execute(file_path: &str) {
                 if arr[ptr] > 0 {
                     arr[ptr] -= 1;
                 } else {
-                    let overflow_location = String::from("array index ") + &i.to_string();
+                    let overflow_location = String::from("array index ") + &ptr.to_string();
                     overflow_error(i, "Underflow", &overflow_location, &program);
                 }
             }

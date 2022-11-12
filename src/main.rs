@@ -10,13 +10,17 @@ pub mod text;
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = text::HELP_GENERAL)]
 struct Cli {
-    /// The path to the file to be executed. Can be relative or absolute. 
+    /// The path to the file to be executed. Can be relative or absolute
     #[arg(default_value = None)]
     path: Option<String>,
 
     /// Display help for a particular error
     #[arg(short, long = "error-help")]
     error_help: Option<String>,
+
+    /// Reads the program from the standard input
+    #[arg(short = 'i')]
+    direct_input: bool,
 }
 
 fn find_matching_bracket(start_index: usize, program: &str) -> usize {
@@ -118,17 +122,20 @@ fn iter_error(max_iters: u16) {
     process::exit(1);
 }
 
-fn execute(file_path: &str) {
-    let mut program = "";
-    let re = Regex::new(r"[^+-><\[\],.]").unwrap();
-    let s;
+fn read_file(file_path: &str) -> String {
+    let mut program = String::from("");
 
     if let Ok(contents) = fs::read_to_string(file_path) {
-        s = contents.to_owned();
-        program = s.as_str();
+        program = contents.to_owned();
     } else {
         file_error("The specified file was not found");
     }
+
+    return program;
+}
+
+fn execute(program: String) {
+    let re = Regex::new(r"[^+-><\[\],.]").unwrap();
 
     let check_match = check_brackets_match(&program);
     if !check_match.0 {
@@ -228,6 +235,12 @@ fn main() {
             _ => "Unknown error type"
         });
     } else if let Some(path) = cli.path.as_deref() {
-        execute(path);
+        let program = read_file(path);
+        execute(program);
+    } else if cli.direct_input {
+        let term = Term::stdout();
+        if let Ok(input) = Term::read_line(&term) {
+            execute(input);
+        }
     }
 }

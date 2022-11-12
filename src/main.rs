@@ -9,6 +9,7 @@ pub mod text;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = text::HELP_GENERAL)]
+#[command(arg_required_else_help(true))]
 struct Cli {
     /// The path to the file to be executed. Can be relative or absolute
     #[arg(default_value = None)]
@@ -29,7 +30,6 @@ fn find_matching_bracket(start_index: usize, program: &str) -> usize {
     let start_char = &program[start_index..start_index+1];
 
     for i in match start_char {
-        "[" => Either::Left(start_index..program.len()),
         "]" => Either::Right((0..start_index+1).rev()),
         _ => Either::Left(start_index..program.len()),
     } {

@@ -46,7 +46,7 @@ fn find_matching_bracket(start_index: usize, program: &str) -> usize {
     return 0 as usize;
 }
 
-fn check_brackets_match(program: &str) -> (bool, usize, &str) {
+fn check_brackets_match(program: &str) -> (bool, usize, char) {
     let mut open_brackets = 0;
     let mut last_open_bracket = 0;
     let mut last_close_bracket = 0;
@@ -63,22 +63,22 @@ fn check_brackets_match(program: &str) -> (bool, usize, &str) {
     let brackets_match = open_brackets == 0;
     
     let mut mismatched = 0;
-    let mut problem_char = "";
+    let mut problem_char = '❌';
     if open_brackets > 0 {
         mismatched = last_open_bracket;
-        problem_char = "[";
+        problem_char = '[';
     } else if open_brackets < 0 {
         mismatched = last_close_bracket;
-        problem_char = "]";
+        problem_char = ']';
     }
 
     return (brackets_match, mismatched, problem_char);
 }
 
-fn find_location(location: usize, program: &str) -> (usize, usize) {
+fn find_location(location: usize, program: &str) -> (usize, i32) {
     let line_num = program[0..location].matches("\n").count() + 1;
 
-    let mut last_newline: i32 = -1;
+    let mut last_newline = -1;
     let mut i = (location as i32) - 1;
     while i >= 0 {
         if &program[i as usize..(i+1) as usize] == "\n" {
@@ -90,7 +90,7 @@ fn find_location(location: usize, program: &str) -> (usize, usize) {
 
     let char_num = location as i32 - last_newline;
 
-    return (line_num, char_num as usize);
+    return (line_num, char_num);
 }
 
 fn overflow_error(location: usize, problem: &str, overflow_location: &str, program: &str) -> String {

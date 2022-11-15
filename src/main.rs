@@ -8,8 +8,7 @@ use regex::Regex;
 pub mod text;
 
 #[derive(Parser, Debug)]
-#[command(author, version, about, long_about = text::HELP_GENERAL)]
-#[command(arg_required_else_help(true))]
+#[command(author, version, about, long_about = text::HELP_GENERAL, arg_required_else_help(true))]
 struct Cli {
     /// The path to the file to be executed. Can be relative or absolute
     #[arg(default_value = None)]
@@ -19,9 +18,9 @@ struct Cli {
     #[arg(short, long = "error-help")]
     error_help: Option<String>,
 
-    /// Reads the program from the standard input
-    #[arg(short = 'i')]
-    direct_input: bool,
+    /// Start a REPL session
+    #[arg(short, long)]
+    repl: bool,
 }
 
 fn find_matching_bracket(start_index: usize, program: &str) -> usize {
@@ -134,19 +133,10 @@ fn read_file(file_path: &str) -> String {
     return program;
 }
 
-fn execute(program: String) {
-    let re = Regex::new(r"[^+-><\[\],.]").unwrap();
-
-    let check_match = check_brackets_match(&program);
-    if !check_match.0 {
-        syntax_error(check_match.1, &format!("Unmatched bracket '{}'", check_match.2), &program);
-    }
-
-    let mut ptr = 0 as usize;
-    let mut arr: [u8; usize::pow(2, 16)] = [0; usize::pow(2, 16)];
-    let mut num_iters: u32 = 0;
+fn interpret(program: String, mut ptr: usize, mut arr: [u8; usize::pow(2, 16)], re: &Regex) -> (usize, [u8; usize::pow(2, 16)]) {
     let max_iters: u16 = u16::MAX;
-    
+    let mut num_iters: u32 = 0;
+
     let mut i: usize = 0;
     while i < program.len() {
         if num_iters > max_iters as u32 {
@@ -219,6 +209,22 @@ fn execute(program: String) {
 
         i += 1;
     }
+
+    return (ptr, arr);
+}
+
+fn execute_file(program: String) {
+    let re = Regex::new(r"[^+-><\[\],.]").unwrap();
+
+    let check_match = check_brackets_match(&program);
+    if !check_match.0 {
+        syntax_error(check_match.1, &format!("Unmatched bracket '{}'", check_match.2), &program);
+    }
+
+    let ptr: usize = 0;
+    let arr: [u8; usize::pow(2, 16)] = [0; usize::pow(2, 16)];
+
+    interpret(program, ptr, arr, &re);
 }
 
 fn main() {
@@ -236,11 +242,18 @@ fn main() {
         });
     } else if let Some(path) = cli.path.as_deref() {
         let program = read_file(path);
-        execute(program);
-    } else if cli.direct_input {
-        let term = Term::stdout();
-        if let Ok(input) = Term::read_line(&term) {
-            execute(input);
+        execute_file(program);
+    } else if cli.repl {
+        let re = Regex::new(r"[^+-><\[\],.]").unwrap();
+
+        let mut ptr: usize = 0;
+        let mut arr: [u8; usize::pow(2, 16)] = [0; usize::pow(2, 16)];
+
+        loop {
+            let term = Term::stdout();
+            if let Ok(input) = Term::read_line(&term) {
+                (ptr, arr) = interpret(input, ptr, arr, &re);
+            }
         }
     }
 }

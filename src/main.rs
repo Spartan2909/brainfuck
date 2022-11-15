@@ -78,19 +78,19 @@ fn check_brackets_match(program: &str) -> (bool, usize, &str) {
 fn find_location(location: usize, program: &str) -> (usize, usize) {
     let line_num = program[0..location].matches("\n").count() + 1;
 
-    let mut last_newline = 0 as usize;
+    let mut last_newline: i32 = -1;
     let mut i = (location as i32) - 1;
     while i >= 0 {
         if &program[i as usize..(i+1) as usize] == "\n" {
-            last_newline = i as usize;
+            last_newline = i;
             i = 0;
         }
         i -= 1;
     }
 
-    let char_num = program[last_newline..location].chars().count();
+    let char_num = location as i32 - last_newline;
 
-    return (line_num, char_num);
+    return (line_num, char_num as usize);
 }
 
 fn overflow_error(location: usize, problem: &str, overflow_location: &str, program: &str) -> String {

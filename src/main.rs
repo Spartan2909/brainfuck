@@ -1,4 +1,4 @@
-use std::{fs, process};
+use std::{fs, process, fmt, error::Error, env};
 
 use clap::Parser;
 use console::Term;
@@ -21,6 +21,53 @@ struct Cli {
     /// Start a REPL session
     #[arg(short, long)]
     repl: bool,
+}
+
+#[derive(Debug)]
+struct ExecutionError {
+    details: String,
+} 
+
+impl ExecutionError {
+    fn new_overflow(location: usize, problem: &str, overflow_location: &str, program: &str) -> ExecutionError {
+        let readable_location = find_location(location, program);
+        let details = format!("{}:{} - Overflow Error - {} at {}", readable_location.0, readable_location.1, problem, overflow_location);
+        ExecutionError{details}
+    }
+
+    fn new_syntax(location: usize, problem: &str, program: &str) -> ExecutionError {
+        let readable_location = find_location(location, program);
+        let details = format!("{}:{} - Syntax Error - {}", readable_location.0, readable_location.1, problem);
+        ExecutionError{details}
+    }
+
+    fn new_parsing(location: usize, program: &str) -> ExecutionError {
+        let readable_location = find_location(location, program);
+        let details = format!("{}:{} - Parsing Error", readable_location.0, readable_location.1);
+        ExecutionError{details}
+    }
+
+    fn new_file(message: &str) -> ExecutionError {
+        let details = format!("File Handling Error - {}", message);
+        ExecutionError{details}
+    }
+
+    fn new_iter(max_iters: u16) -> ExecutionError {
+        let details = format!("Iteration Error - Exceeded max number of iterations ({})", max_iters);
+        ExecutionError{details}
+    }
+}
+
+impl fmt::Display for ExecutionError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f,"{}",self.details)
+    }
+}
+
+impl Error for ExecutionError {
+    fn description(&self) -> &str {
+        &self.details
+    }
 }
 
 fn find_matching_bracket(start_index: usize, program: &str) -> usize {
@@ -46,7 +93,7 @@ fn find_matching_bracket(start_index: usize, program: &str) -> usize {
     return 0 as usize;
 }
 
-fn check_brackets_match(program: &str) -> (bool, usize, char) {
+fn check_brackets_match(program: &str) -> Result<(), ExecutionError> {
     let mut open_brackets = 0;
     let mut last_open_bracket = 0;
     let mut last_close_bracket = 0;
@@ -60,7 +107,9 @@ fn check_brackets_match(program: &str) -> (bool, usize, char) {
         }
     }
 
-    let brackets_match = open_brackets == 0;
+    if open_brackets == 0 {
+        return Ok(());
+    }
     
     let mut mismatched = 0;
     let mut problem_char = '❌';
@@ -72,7 +121,8 @@ fn check_brackets_match(program: &str) -> (bool, usize, char) {
         problem_char = ']';
     }
 
-    return (brackets_match, mismatched, problem_char);
+    return Err(ExecutionError::new_syntax(mismatched, &format!("Unmatched bracket '{}'", problem_char), &program))
+
 }
 
 fn find_location(location: usize, program: &str) -> (usize, i32) {
@@ -93,96 +143,77 @@ fn find_location(location: usize, program: &str) -> (usize, i32) {
     return (line_num, char_num);
 }
 
-fn overflow_error(location: usize, problem: &str, overflow_location: &str, program: &str) -> String {
-    let readable_location = find_location(location, program);
-    eprintln!("{}:{} - Overflow Error - {} at {}", readable_location.0, readable_location.1, problem, overflow_location);
-    process::exit(1);
-}
-
-fn syntax_error(location: usize, problem: &str, program: &str) -> String {
-    let readable_location = find_location(location, program);
-    eprintln!("{}:{} - Syntax Error - {}", readable_location.0, readable_location.1, problem);
-    process::exit(1);
-}
-
-fn parsing_error(location: usize, program: &str) -> String {
-    let readable_location = find_location(location, program);
-    eprintln!("{}:{} - Parsing Error", readable_location.0, readable_location.1);
-    process::exit(1);
-}
-
-fn file_error(message: &str) -> String {
-    eprintln!("File Handling Error - {}", message);
-    process::exit(1);
-}
-
-fn iter_error(max_iters: u16) {
-    eprintln!("Iteration Error - Exceeded max number of iterations ({})", max_iters);
-    process::exit(1);
-}
-
 fn read_file(file_path: &str) -> String {
-    let mut program = String::from("");
+    let program;
 
     if let Ok(contents) = fs::read_to_string(file_path) {
         program = contents.to_owned();
     } else {
-        file_error("The specified file was not found");
+        let err = ExecutionError::new_file("The specified file was not found");
+        eprintln!("{}", err.details);
+        process::exit(1);
     }
 
     return program;
 }
 
-fn interpret(program: String, mut ptr: usize, mut arr: [u8; usize::pow(2, 16)], re: &Regex) -> (usize, [u8; usize::pow(2, 16)]) {
+fn interpret(program: String, mut ptr: usize, mut arr: [u8; usize::pow(2, 16)], re: &Regex) -> Result<(usize, [u8; usize::pow(2, 16)]), ExecutionError> {
     let max_iters: u16 = u16::MAX;
     let mut num_iters: u32 = 0;
 
     let mut i: usize = 0;
     while i < program.len() {
         if num_iters > max_iters as u32 {
-            iter_error(max_iters);
+            let err = ExecutionError::new_iter(max_iters);
+            eprintln!("{}", err.details);
+            process::exit(1);
         }
         
-        let current_char = program.chars().nth(i);
-        let mut item = '0';
-        if current_char.is_some() {
-            item = current_char.expect("Internal error");
-        } else {
-            parsing_error(i, &program);
+        let current_char_option = program.chars().nth(i);
+        let current_char;
+        match current_char_option {
+            Some(value) => {
+                current_char = value;
+            },
+            None => {
+                let err = ExecutionError::new_parsing(i, &program);
+                eprintln!("{}", err.details);
+                process::exit(1);
+            }
         }
 
-        match item {
-            item if re.is_match(&item.to_string()) => {}
+        match current_char {
+            current_char if re.is_match(&current_char.to_string()) => {},
             '>' => {
                 if ptr < u16::MAX as usize {
                     ptr += 1;
                 } else {
-                    overflow_error(i, "Overflow", "data pointer", &program);
+                    return Err(ExecutionError::new_overflow(i, "Overflow", "data pointer", &program));
                 }
-            }
+            },
             '<' => {
                 if ptr > 0 {
                     ptr -= 1;
                 } else {
-                    overflow_error(i, "Underflow", "data pointer", &program);
+                    return Err(ExecutionError::new_overflow(i, "Underflow", "data pointer", &program));
                 }
-            }
+            },
             '+' => {
                 if arr[ptr] < u8::MAX {
                     arr[ptr] += 1;
                 } else {
                     let overflow_location = String::from("array index ") + &ptr.to_string();
-                    overflow_error(i, "Overflow", &overflow_location, &program);
+                    return Err(ExecutionError::new_overflow(i, "Overflow", &overflow_location, &program));
                 }
-            }
+            },
             '-' => {
                 if arr[ptr] > 0 {
                     arr[ptr] -= 1;
                 } else {
                     let overflow_location = String::from("array index ") + &ptr.to_string();
-                    overflow_error(i, "Underflow", &overflow_location, &program);
+                    return Err(ExecutionError::new_overflow(i, "Underflow", &overflow_location, &program));
                 }
-            }
+            },
             '.' => {print!("{}", arr[ptr] as char);}
             ',' => {
                 let term = Term::stdout();
@@ -191,40 +222,43 @@ fn interpret(program: String, mut ptr: usize, mut arr: [u8; usize::pow(2, 16)], 
                     input.encode_utf8(&mut b);
                     arr[ptr] = b[0];
                 }
-            }
+            },
             '[' => {
                 if arr[ptr] == 0 {
                     i = find_matching_bracket(i, &program);
                     num_iters = 0;
                 }
-            }
+            },
             ']' => {
                 if arr[ptr] != 0 {
                     i = find_matching_bracket(i, &program);
                     num_iters += 1;
                 }
-            }
+            },
             _ => {}
         }
 
         i += 1;
     }
 
-    return (ptr, arr);
+    return Ok((ptr, arr));
 }
 
 fn execute_file(program: String) {
     let re = Regex::new(r"[^+-><\[\],.]").unwrap();
 
-    let check_match = check_brackets_match(&program);
-    if !check_match.0 {
-        syntax_error(check_match.1, &format!("Unmatched bracket '{}'", check_match.2), &program);
+    if let Err(err) = check_brackets_match(&program) {
+        eprintln!("{}", err.details);
+        process::exit(1);
     }
 
     let ptr: usize = 0;
     let arr: [u8; usize::pow(2, 16)] = [0; usize::pow(2, 16)];
 
-    interpret(program, ptr, arr, &re);
+    if let Err(err) = interpret(program, ptr, arr, &re) {
+        eprintln!("{}", err.details);
+        process::exit(1);
+    }
 }
 
 fn main() {
@@ -244,6 +278,12 @@ fn main() {
         let program = read_file(path);
         execute_file(program);
     } else if cli.repl {
+        let exit_command = match env::consts::OS {
+            "macos" => "Command + C",
+            _ => "Ctrl + C",
+        };
+        println!("REPL session activated. Press {} to exit.", exit_command);
+
         let re = Regex::new(r"[^+-><\[\],.]").unwrap();
 
         let mut ptr: usize = 0;
@@ -252,7 +292,16 @@ fn main() {
         loop {
             let term = Term::stdout();
             if let Ok(input) = Term::read_line(&term) {
-                (ptr, arr) = interpret(input, ptr, arr, &re);
+                let result = interpret(input, ptr, arr, &re);
+                match result {
+                    Ok((ptr_tmp, arr_tmp)) => {
+                        ptr = ptr_tmp;
+                        arr = arr_tmp;
+                    },
+                    Err(err) => {
+                        eprintln!("{}", err.details);
+                    }
+                }
             }
         }
     }

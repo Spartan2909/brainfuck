@@ -21,6 +21,10 @@ struct Cli {
     /// Start a REPL session
     #[arg(short, long)]
     repl: bool,
+
+    /// Start in unsafe mode
+    #[arg(short = 'u', long = "unsafe")]
+    is_unsafe: bool,
 }
 
 #[derive(Debug)]
@@ -157,7 +161,7 @@ fn read_file(file_path: &str) -> String {
     return program;
 }
 
-fn interpret(program: String, mut ptr: usize, mut arr: [u8; usize::pow(2, 16)], re: &Regex) -> Result<(usize, [u8; usize::pow(2, 16)]), ExecutionError> {
+fn interpret(program: String, mut ptr: usize, mut arr: [u8; usize::pow(2, 16)], re: &Regex, safe: bool) -> Result<(usize, [u8; usize::pow(2, 16)]), ExecutionError> {
     let max_iters: u16 = u16::MAX;
     let mut num_iters: u32 = 0;
 
@@ -188,30 +192,46 @@ fn interpret(program: String, mut ptr: usize, mut arr: [u8; usize::pow(2, 16)], 
                 if ptr < u16::MAX as usize {
                     ptr += 1;
                 } else {
-                    return Err(ExecutionError::new_overflow(i, "Overflow", "data pointer", &program));
+                    if safe {
+                        return Err(ExecutionError::new_overflow(i, "Overflow", "data pointer", &program));
+                    } else {
+                        ptr = 0;
+                    }
                 }
             },
             '<' => {
                 if ptr > 0 {
                     ptr -= 1;
                 } else {
-                    return Err(ExecutionError::new_overflow(i, "Underflow", "data pointer", &program));
+                    if safe {
+                        return Err(ExecutionError::new_overflow(i, "Underflow", "data pointer", &program));
+                    } else {
+                        ptr = u16::max as usize;
+                    }
                 }
             },
             '+' => {
                 if arr[ptr] < u8::MAX {
                     arr[ptr] += 1;
                 } else {
-                    let overflow_location = String::from("array index ") + &ptr.to_string();
-                    return Err(ExecutionError::new_overflow(i, "Overflow", &overflow_location, &program));
+                    if safe {
+                        let overflow_location = String::from("array index ") + &ptr.to_string();
+                        return Err(ExecutionError::new_overflow(i, "Overflow", &overflow_location, &program));
+                    } else {
+                        arr[ptr] = 0;
+                    }
                 }
             },
             '-' => {
                 if arr[ptr] > 0 {
                     arr[ptr] -= 1;
                 } else {
-                    let overflow_location = String::from("array index ") + &ptr.to_string();
-                    return Err(ExecutionError::new_overflow(i, "Underflow", &overflow_location, &program));
+                    if safe {
+                        let overflow_location = String::from("array index ") + &ptr.to_string();
+                        return Err(ExecutionError::new_overflow(i, "Underflow", &overflow_location, &program));
+                    } else {
+                        arr[ptr] = u8::MAX;
+                    }
                 }
             },
             '.' => {print!("{}", arr[ptr] as char);}
@@ -244,7 +264,7 @@ fn interpret(program: String, mut ptr: usize, mut arr: [u8; usize::pow(2, 16)], 
     return Ok((ptr, arr));
 }
 
-fn execute_file(program: String) {
+fn execute_file(program: String, safe: bool) {
     let re = Regex::new(r"[^+-><\[\],.]").unwrap();
 
     if let Err(err) = check_brackets_match(&program) {
@@ -255,7 +275,7 @@ fn execute_file(program: String) {
     let ptr: usize = 0;
     let arr: [u8; usize::pow(2, 16)] = [0; usize::pow(2, 16)];
 
-    if let Err(err) = interpret(program, ptr, arr, &re) {
+    if let Err(err) = interpret(program, ptr, arr, &re, safe) {
         eprintln!("{}", err.details);
         process::exit(1);
     }
@@ -263,6 +283,8 @@ fn execute_file(program: String) {
 
 fn main() {
     let cli = Cli::parse();
+
+    let safe = !cli.is_unsafe;
 
     if let Some(error_help) = cli.error_help.as_deref() {
         println!("{}", match error_help {
@@ -276,7 +298,7 @@ fn main() {
         });
     } else if let Some(path) = cli.path.as_deref() {
         let program = read_file(path);
-        execute_file(program);
+        execute_file(program, safe);
     } else if cli.repl {
         let exit_command = match env::consts::OS {
             "macos" => "Command + C",
@@ -292,7 +314,7 @@ fn main() {
         loop {
             let term = Term::stdout();
             if let Ok(input) = Term::read_line(&term) {
-                let result = interpret(input, ptr, arr, &re);
+                let result = interpret(input, ptr, arr, &re, safe);
                 match result {
                     Ok((ptr_tmp, arr_tmp)) => {
                         ptr = ptr_tmp;

@@ -1,4 +1,4 @@
-use std::{fs, process, fmt, error::Error, env};
+use std::{fs, fmt, error::Error, env};
 
 use clap::Parser;
 use console::Term;
@@ -30,35 +30,36 @@ struct Cli {
 #[derive(Debug)]
 struct ExecutionError {
     details: String,
+    code: u8,
 } 
 
 impl ExecutionError {
     fn new_overflow(location: usize, problem: &str, overflow_location: &str, program: &str) -> ExecutionError {
         let readable_location = find_location(location, program);
         let details = format!("{}:{} - Overflow Error - {} at {}", readable_location.0, readable_location.1, problem, overflow_location);
-        ExecutionError{details}
+        ExecutionError{details, code: 75}
     }
 
     fn new_syntax(location: usize, problem: &str, program: &str) -> ExecutionError {
         let readable_location = find_location(location, program);
         let details = format!("{}:{} - Syntax Error - {}", readable_location.0, readable_location.1, problem);
-        ExecutionError{details}
+        ExecutionError{details, code: 1}
     }
 
     fn new_parsing(location: usize, program: &str) -> ExecutionError {
         let readable_location = find_location(location, program);
         let details = format!("{}:{} - Parsing Error", readable_location.0, readable_location.1);
-        ExecutionError{details}
+        ExecutionError{details, code: 1}
     }
 
     fn new_file(message: &str) -> ExecutionError {
         let details = format!("File Handling Error - {}", message);
-        ExecutionError{details}
+        ExecutionError{details, code: 2}
     }
 
     fn new_iter(max_iters: u16) -> ExecutionError {
         let details = format!("Iteration Error - Exceeded max number of iterations ({})", max_iters);
-        ExecutionError{details}
+        ExecutionError{details, code: 1}
     }
 }
 
@@ -126,7 +127,6 @@ fn check_brackets_match(program: &str) -> Result<(), ExecutionError> {
     }
 
     return Err(ExecutionError::new_syntax(mismatched, &format!("Unmatched bracket '{}'", problem_char), &program))
-
 }
 
 fn find_location(location: usize, program: &str) -> (usize, i32) {
@@ -147,18 +147,12 @@ fn find_location(location: usize, program: &str) -> (usize, i32) {
     return (line_num, char_num);
 }
 
-fn read_file(file_path: &str) -> String {
-    let program;
-
+fn read_file(file_path: &str) -> Result<String, ExecutionError> {
     if let Ok(contents) = fs::read_to_string(file_path) {
-        program = contents.to_owned();
+        Ok(contents.to_owned())
     } else {
-        let err = ExecutionError::new_file("The specified file was not found");
-        eprintln!("{}", err.details);
-        process::exit(1);
+        Err(ExecutionError::new_file("The specified file was not found"))
     }
-
-    return program;
 }
 
 fn interpret(program: String, mut ptr: usize, mut arr: [u8; usize::pow(2, 16)], re: &Regex, safe: bool) -> Result<(usize, [u8; usize::pow(2, 16)]), ExecutionError> {
@@ -168,9 +162,7 @@ fn interpret(program: String, mut ptr: usize, mut arr: [u8; usize::pow(2, 16)], 
     let mut i: usize = 0;
     while i < program.len() {
         if num_iters > max_iters as u32 {
-            let err = ExecutionError::new_iter(max_iters);
-            eprintln!("{}", err.details);
-            process::exit(1);
+            return Err(ExecutionError::new_iter(max_iters));
         }
         
         let current_char_option = program.chars().nth(i);
@@ -180,9 +172,7 @@ fn interpret(program: String, mut ptr: usize, mut arr: [u8; usize::pow(2, 16)], 
                 current_char = value;
             },
             None => {
-                let err = ExecutionError::new_parsing(i, &program);
-                eprintln!("{}", err.details);
-                process::exit(1);
+                return Err(ExecutionError::new_parsing(i, &program));
             }
         }
 
@@ -264,29 +254,31 @@ fn interpret(program: String, mut ptr: usize, mut arr: [u8; usize::pow(2, 16)], 
     return Ok((ptr, arr));
 }
 
-fn execute_file(program: String, safe: bool) {
+fn execute_file(program: String, safe: bool) -> Result<(), ExecutionError> {
     let re = Regex::new(r"[^+-><\[\],.]").unwrap();
 
     if let Err(err) = check_brackets_match(&program) {
-        eprintln!("{}", err.details);
-        process::exit(1);
+        return Err(err);
     }
 
     let ptr: usize = 0;
     let arr: [u8; usize::pow(2, 16)] = [0; usize::pow(2, 16)];
 
-    if let Err(err) = interpret(program, ptr, arr, &re, safe) {
-        eprintln!("{}", err.details);
-        process::exit(1);
+    match interpret(program, ptr, arr, &re, safe) {
+        Ok(_) => Ok(()),
+        Err(err) => Err(err)
     }
 }
 
-fn main() {
+fn main() -> Result<(), u8> {
     let cli = Cli::parse();
 
     let safe = !cli.is_unsafe;
+    if !safe {
+        println!("Starting in unsafe mode.");
+    }
 
-    if let Some(error_help) = cli.error_help.as_deref() {
+    let result = if let Some(error_help) = cli.error_help.as_deref() {
         println!("{}", match error_help {
             "overflow" | "underflow" | "overflow error" => text::HELP_OVERFLOW,
             "syntax" | "syntax error" => text::HELP_SYNTAX,
@@ -296,9 +288,14 @@ fn main() {
             "iteration" | "iteration error" => text::HELP_ITER,
             _ => "Unknown error type"
         });
+
+        Ok(())
     } else if let Some(path) = cli.path.as_deref() {
-        let program = read_file(path);
-        execute_file(program, safe);
+        let program_result = read_file(path);
+        match program_result {
+            Ok(program) => execute_file(program, safe),
+            Err(err) => Err(err)
+        }
     } else if cli.repl {
         let exit_command = match env::consts::OS {
             "macos" => "Command + C",
@@ -325,6 +322,16 @@ fn main() {
                     }
                 }
             }
+        }
+    } else {
+        Err(ExecutionError::new_file("failed"))
+    };
+
+    match result {
+        Ok(_) => Ok(()),
+        Err(err) => {
+            eprintln!("{}", err.details);
+            Err(err.code)
         }
     }
 }

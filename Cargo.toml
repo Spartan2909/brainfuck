@@ -6,6 +6,7 @@ readme = "README.md"
 license = "MIT"
 repository = "https://github.com/Spartan2909/brainfuck"
 description = "A fully featured implementation of Brainfuck in Rust."
+documentation = "https://github.com/Spartan2909/brainfuck#readme"
 keywords = ["brainfuck"]
 categories = ["compilers"]
 

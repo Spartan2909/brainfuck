@@ -15,7 +15,7 @@ struct Cli {
     path: Option<String>,
 
     /// Display help for a particular error
-    #[arg(short, long = "error-help")]
+    #[arg(long = "error-help")]
     error_help: Option<String>,
 
     /// Start a REPL session
@@ -25,6 +25,10 @@ struct Cli {
     /// Start in unsafe mode
     #[arg(short = 'u', long = "unsafe")]
     is_unsafe: bool,
+
+    /// Use extended syntax
+    #[arg(short, long)]
+    extended: bool,
 }
 
 #[derive(Debug)]
@@ -227,10 +231,34 @@ fn interpret(program: String, mut ptr: usize, mut arr: [u8; usize::pow(2, 16)], 
             '.' => {print!("{}", arr[ptr] as char);}
             ',' => {
                 let term = Term::stdout();
-                if let Ok(input) = Term::read_char(&term) {
+                if let Ok(input) = term.read_char() {
                     let mut b = [0u8; 4];
                     input.encode_utf8(&mut b);
-                    arr[ptr] = b[0];
+                    if safe {
+                        arr[ptr] = b[0];
+                    } else {
+                        for (j, byte) in b.iter().enumerate() {
+                            if *byte == 0 {break;}
+
+                            arr[ptr + j] = *byte;
+                        }
+                    }
+                }
+            },
+            ';' => {
+                let term = Term::stdout();
+                if let Ok(input) = term.read_char() {
+                    let mut b = [0u8; 4];
+                    input.encode_utf8(&mut b);
+                    if safe {
+                        arr[ptr] += b[0];
+                    } else {
+                        for (j, byte) in b.iter().enumerate() {
+                            if *byte == 0 {break;}
+
+                            arr[ptr + j] += *byte;
+                        }
+                    }
                 }
             },
             '[' => {
@@ -254,8 +282,8 @@ fn interpret(program: String, mut ptr: usize, mut arr: [u8; usize::pow(2, 16)], 
     return Ok((ptr, arr));
 }
 
-fn execute_file(program: String, safe: bool) -> Result<(), ExecutionError> {
-    let re = Regex::new(r"[^+-><\[\],.]").unwrap();
+fn execute_file(program: String, safe: bool, re_base: &str) -> Result<(), ExecutionError> {
+    let re = Regex::new(re_base).unwrap();
 
     if let Err(err) = check_brackets_match(&program) {
         return Err(err);
@@ -278,6 +306,13 @@ fn main() -> Result<(), u8> {
         println!("Starting in unsafe mode.");
     }
 
+    let re_base;
+    if cli.extended {
+        re_base = r"[^+-><\[\],.;]";
+    } else {
+        re_base = r"[^+-><\[\],.]";
+    }
+
     let result = if let Some(error_help) = cli.error_help.as_deref() {
         println!("{}", match error_help {
             "overflow" | "underflow" | "overflow error" => text::HELP_OVERFLOW,
@@ -293,7 +328,7 @@ fn main() -> Result<(), u8> {
     } else if let Some(path) = cli.path.as_deref() {
         let program_result = read_file(path);
         match program_result {
-            Ok(program) => execute_file(program, safe),
+            Ok(program) => execute_file(program, safe, re_base),
             Err(err) => Err(err)
         }
     } else if cli.repl {
@@ -303,7 +338,7 @@ fn main() -> Result<(), u8> {
         };
         println!("REPL session activated. Press {} to exit.", exit_command);
 
-        let re = Regex::new(r"[^+-><\[\],.]").unwrap();
+        let re = Regex::new(re_base).unwrap();
 
         let mut ptr: usize = 0;
         let mut arr: [u8; usize::pow(2, 16)] = [0; usize::pow(2, 16)];

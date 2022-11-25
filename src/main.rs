@@ -245,6 +245,7 @@ fn interpret(program: String, mut ptr: usize, mut arr: [u8; usize::pow(2, 16)], 
                     }
                 }
             },
+            ':' => {print!("{}", arr[ptr]);},
             ';' => {
                 let term = Term::stdout();
                 if let Ok(input) = term.read_char() {
@@ -308,7 +309,8 @@ fn main() -> Result<(), u8> {
 
     let re_base;
     if cli.extended {
-        re_base = r"[^+-><\[\],.;]";
+        re_base = r"[^+-><\[\],.;:]";
+        println!("Using extended syntax.")
     } else {
         re_base = r"[^+-><\[\],.]";
     }

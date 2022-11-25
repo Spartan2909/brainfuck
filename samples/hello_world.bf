@@ -17,10 +17,10 @@
     <-                  Decrement the loop Counter in Cell #0
 ]                       Loop until Cell #0 is zero; number of iterations is 8
 
-The result of this is:
-Cell no :   0   1   2   3   4   5   6
-Contents:   0   0  72 104  88  32   8
-Pointer :   ^
+The result of this is
+Cell no    0   1   2   3   4   5   6
+Contents   0   0  72 104  88  32   8
+Pointer    ^
 
 >>.                     Cell #2 has value 72 which is 'H'
 >---.                   Subtract 3 from Cell #3 to get 101 which is 'e'

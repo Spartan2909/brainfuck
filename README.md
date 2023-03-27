@@ -1,4 +1,4 @@
-# Brainfuck [![GitHub Workflow Status](https://img.shields.io/github/workflow/status/Spartan2909/brainfuck/Compile%20and%20save%20program?logo=rust)](https://github.com/Spartan2909/brainfuck/actions/workflows/build.yml)
+# Brainfuck [![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/Spartan2909/brainfuck/build.yml?logo=rust)](https://github.com/Spartan2909/brainfuck/actions/workflows/build.yml)
 
 Brainfuck is an esoteric programming language originally developed by Urban Müller in 1993.
 This is my implementation of it in Rust.
